@@ -173,6 +173,7 @@ protected:
       for (ConsensusFeature::HandleSetType::const_iterator feature_iter = feature.begin();
       feature_iter != feature.end(); ++feature_iter)
       {
+        scans_output << setprecision(4) << feature_iter->getMZ() << "\t" << setprecision(2) << feature_iter->getIntensity() << endl;
         if (feature_iter->getCharge() > charge)
         {
           charge = feature_iter->getCharge();
@@ -181,9 +182,6 @@ protected:
 
       // print spectra information (PeptideIdentification tags)
       vector<PeptideIdentification> peptide_identifications = feature.getPeptideIdentifications();
-
-
-      // clean peptide identifications outside mz rt tol ranges
 
       // vector of <<map index, spectrum index>, most intense ms2 scan>
       vector<pair<pair<double,PeptideIdentification>,pair<int,int>>> peptides;
@@ -219,6 +217,7 @@ protected:
             {
               should_skip_feature = false;
 
+              // DEBUG determine if within user rt and mz tol range
               if (abs(feature.getMZ() - peptide_identification.getMZ()) > prec_mz_tol
               && abs(feature.getRT() - peptide_identification.getRT()) > prec_rt_tol)
               {
@@ -256,6 +255,27 @@ protected:
         stringstream feature_stream;
         feature_stream << setprecision(4) << fixed;
 
+        // print out groupedElementList
+        output_stream << "BEGIN IONS" << endl;
+        output_stream << "FEATURE_ID=" << feature_count << endl;
+        output_stream << "CONSENSUS_ID=e_" << feature.getUniqueId() << endl;
+        output_stream << "MSLEVEL=1" << endl;
+        output_stream << "SPECTYPE=CORRELATED MS" << endl;
+        output_stream << "CHARGE=" << std::to_string(charge == 0 ? 1 : charge) << "+" << endl;
+        output_stream << "PEPMASS=" << setprecision(4) << feature.getMZ() << setprecision(2) << endl;
+        if(feature.metaValueExists("dc_charge_adducts"))
+        {
+          output_stream << "ION=" << feature.getMetaValue("dc_charge_adducts") << endl;
+        }
+        if(feature.metaValueExists("CP"))
+        {
+          String score = feature.getMetaValue("CP");
+          output_stream << "ADDUCT_SCORE=" << score.substr(score.rfind(":")+2, 4) << endl;
+        }
+        // output_stream << "FILE_INDEX=" << << endl;
+        output_stream << "RTINSECONDS=" << feature.getRT() << endl;
+        output_stream << scans_output.str() << endl;
+
         // full spectra
         if (output_type == "full_spectra")
         {
@@ -286,12 +306,14 @@ protected:
 
             for (Size l = 0; l < ms2_scan.size(); l++)
             {
-              feature_stream << ms2_scan[l].getMZ() << "\t" << (int) ms2_scan[l].getIntensity() << endl;
+              if( ms2_scan[l].getIntensity() > 0 )
+              {
+                feature_stream << ms2_scan[l].getMZ() << "\t" << setprecision(3) << ms2_scan[l].getIntensity() << setprecision(4) << endl;
+              }
             }
 
             feature_stream << "END IONS" << endl << endl;
           }
-          feature_count++;
         }
         else // merged spectra
         {
@@ -300,8 +322,8 @@ protected:
 
           // MSExperiment exp;
 
-          // const BinnedSpectrum binned_highest_int(0.02, 1, ms_maps[peptides[0].second.first][peptides[0].second.second]);
-          const BinnedSpectrum binned_highest_int(ms_maps[peptides[0].second.first][peptides[0].second.second], BinnedSpectrum::DEFAULT_BIN_WIDTH_HIRES, false, 1, BinnedSpectrum::DEFAULT_BIN_OFFSET_HIRES);
+					const BinnedSpectrum binned_highest_int(0.02, 1, ms_maps[peptides[0].second.first][peptides[0].second.second]); // 2.3
+          //const BinnedSpectrum binned_highest_int(ms_maps[peptides[0].second.first][peptides[0].second.second], 0.02, false, 1, 0); // 2.4
 
           for (auto peptide : peptides)
           {
@@ -312,8 +334,8 @@ protected:
 
             auto spectrum = ms_maps[map_index][spectra_index];
 
-            // const BinnedSpectrum binned_spectrum(.02, 1, spectrum);
-            const BinnedSpectrum binned_spectrum(spectrum, BinnedSpectrum::DEFAULT_BIN_WIDTH_HIRES, false, 1, BinnedSpectrum::DEFAULT_BIN_OFFSET_HIRES);
+						const BinnedSpectrum binned_spectrum(0.02, 1, spectrum); // 2.3
+            //const BinnedSpectrum binned_spectrum(spectrum, 0.02, false, 1, 0); // 2.4
 
             BinnedSpectralContrastAngle bsca;
             double cosine_sim = bsca(binned_highest_int, binned_spectrum);
@@ -338,7 +360,7 @@ protected:
 
           feature_stream << "BEGIN IONS" << endl;
 
-          feature_stream << "FEATURE_ID=" << feature_count++ << endl;
+          feature_stream << "FEATURE_ID=" << feature_count << endl;
           feature_stream << "CONSENSUS_ID=e_" << feature.getUniqueId() << endl;
 
           feature_stream << "MSLEVEL=2" << endl;
@@ -347,15 +369,18 @@ protected:
           feature_stream << "FILE_INDEX=" << peptides[0].second.second << endl;
           feature_stream << "RTINSECOND=" << peptides[0].first.second.getRT() << endl;
 
-          for (auto ms2_iter = ms2_block.rbegin(); ms2_iter != ms2_block.rend(); ++ms2_iter)
+          for (auto ms2_iter = ms2_block.rbegin(); ms2_iter != ms2_block.rend() && ms2_iter->second > 0; ++ms2_iter)
           {
-            feature_stream << ms2_iter->first << "\t" << (int) ms2_iter->second << endl;
+            feature_stream << ms2_iter->first << "\t" << setprecision(3) << ms2_iter->second << setprecision(4) << endl;
           }
           feature_stream << "END IONS" << endl << endl;
         }
 
         // output feature information to general outputStream
         output_stream << feature_stream.str() << endl;
+
+        // increment feature count
+        feature_count++;
       }
     }
     progress_logger.endProgress();
