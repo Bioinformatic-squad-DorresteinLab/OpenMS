@@ -82,8 +82,8 @@ public:
 
 private:
   double DEF_COSINE_SIMILARITY = 0.95;
-  double DEF_PRECURSOR_MZ_TOLERANCE = 0.0001;
-  double DEF_PRECURSOR_RT_TOLERANCE = 5;
+  // double DEF_PRECURSOR_MZ_TOLERANCE = 0.0001;
+  // double DEF_PRECURSOR_RT_TOLERANCE = 5;
 
 protected:
   // this function will be used to register the tool parameters
@@ -102,8 +102,8 @@ protected:
     registerStringOption_("output_type", "<choice>", "full_spectra", "specificity of mgf output information", false);
     setValidStrings_("output_type", ListUtils::create<String>("full_spectra,merged_spectra"));
 
-    registerDoubleOption_("precursor_mz_tolerance", "<num>", DEF_PRECURSOR_MZ_TOLERANCE, "Tolerance mz window for precursor selection", false);
-    registerDoubleOption_("precursor_rt_tolerance", "<num>", DEF_PRECURSOR_RT_TOLERANCE, "Tolerance rt window for precursor selection", false);
+    // registerDoubleOption_("precursor_mz_tolerance", "<num>", DEF_PRECURSOR_MZ_TOLERANCE, "Tolerance mz window for precursor selection", false);
+    // registerDoubleOption_("precursor_rt_tolerance", "<num>", DEF_PRECURSOR_RT_TOLERANCE, "Tolerance rt window for precursor selection", false);
 
     registerTOPPSubsection_("merged_spectra", "Options for exporting mgf file with merged spectra per feature");
     registerDoubleOption_("merged_spectra:cos_similarity", "<num>", DEF_COSINE_SIMILARITY, "Cosine similarity threshold for merged_spectra output", false);
@@ -125,8 +125,8 @@ protected:
 
     String output_type(getStringOption_("output_type"));
 
-    double prec_mz_tol(getDoubleOption_("precursor_mz_tolerance"));
-    double prec_rt_tol(getDoubleOption_("precursor_rt_tolerance"));
+    // double prec_mz_tol(getDoubleOption_("precursor_mz_tolerance"));
+    // double prec_rt_tol(getDoubleOption_("precursor_rt_tolerance"));
 
     double cos_sim(getDoubleOption_("merged_spectra:cos_similarity"));
 
@@ -182,12 +182,15 @@ protected:
       // print spectra information (PeptideIdentification tags)
       vector<PeptideIdentification> peptide_identifications = feature.getPeptideIdentifications();
 
+      // TEMP
+      cout << "\nfor feature " << i << " e_" << feature.getUniqueId() << endl;
 
       // clean peptide identifications outside mz rt tol ranges
 
       // vector of <<map index, spectrum index>, most intense ms2 scan>
       vector<pair<pair<double,PeptideIdentification>,pair<int,int>>> peptides;
 
+      // determine if current feature has peptide annotations
       bool should_skip_feature;
       if (!(should_skip_feature = peptide_identifications.empty()))
       {
@@ -219,26 +222,38 @@ protected:
             {
               should_skip_feature = false;
 
-              if (abs(feature.getMZ() - peptide_identification.getMZ()) > prec_mz_tol
-              && abs(feature.getRT() - peptide_identification.getRT()) > prec_rt_tol)
-              {
-                continue;
-              }
+              // if (abs(feature.getMZ() - peptide_identification.getMZ()) > prec_mz_tol
+              // && abs(feature.getRT() - peptide_identification.getRT()) > prec_rt_tol)
+              // {
+              //   continue;
+              // }
 
-              double similarity_index = 5 * abs(feature.getMZ() - peptide_identification.getMZ()) +
-              abs(feature.getRT() - peptide_identification.getRT());
+              // double similarity_index = 5 * abs(feature.getMZ() - peptide_identification.getMZ()) + abs(feature.getRT() - peptide_identification.getRT());
 
-              pair<double,PeptideIdentification> first_pair = pair<double,PeptideIdentification>(similarity_index, peptide_identification);
+              pair<double,PeptideIdentification> first_pair = pair<double,PeptideIdentification>(1, peptide_identification);
               pair<int,int> second_pair = pair<int,int>(map_index, spectrum_index);
 
               peptides.push_back(pair<pair<double,PeptideIdentification>,pair<int,int>>(first_pair,second_pair));
             }
-          }
-          else
-          {
-            should_skip_feature = true;
+            else
+            {
+              cout << "\t" << peptide_identification.getMetaValue("spectrum_reference") << endl;
+
+              if (ms2_scan.getMSLevel() != 2)
+              {
+                cout << "\t\t-scan_level != 2" << endl;
+              }
+              if (ms2_scan.empty())
+              {
+                cout << "\t\t-ms2 scan is empty\t" << peptide_identification.getMetaValue("spectrum_reference") << endl;
+              }
+            }
           }
         }
+      }
+      else
+      {
+        cout << "empty peptide identification list" << endl;
       }
 
       // peptides list of < <similarity_index, PeptideIdentification>, <map_index, feature_index> >
@@ -263,7 +278,7 @@ protected:
           {
             feature_stream << "BEGIN IONS" << endl;
 
-            feature_stream << "FEATURE_ID=" << to_string(feature_count) << endl;
+            feature_stream << "SCANS=" << to_string(feature_count) << endl;
 
             string filename = mzml_file_paths[peptide.second.first];
             Size parse_index = filename.rfind("/") + 1;
@@ -280,7 +295,7 @@ protected:
             // sort spectra
             sort (ms2_scan.begin(), ms2_scan.end(), [](const Peak1D& a, const Peak1D& b)
             {
-              return a.getMZ() > b.getMZ();
+              return a.getMZ() < b.getMZ();
             });
             // ms2_scan.sortByIntensity(true);
 
@@ -338,7 +353,7 @@ protected:
 
           feature_stream << "BEGIN IONS" << endl;
 
-          feature_stream << "FEATURE_ID=" << feature_count++ << endl;
+          feature_stream << "SCANS=" << feature_count++ << endl;
           feature_stream << "CONSENSUS_ID=e_" << feature.getUniqueId() << endl;
 
           feature_stream << "MSLEVEL=2" << endl;
@@ -347,7 +362,7 @@ protected:
           feature_stream << "FILE_INDEX=" << peptides[0].second.second << endl;
           feature_stream << "RTINSECOND=" << peptides[0].first.second.getRT() << endl;
 
-          for (auto ms2_iter = ms2_block.rbegin(); ms2_iter != ms2_block.rend(); ++ms2_iter)
+          for (auto ms2_iter = ms2_block.begin(); ms2_iter != ms2_block.end(); ++ms2_iter)
           {
             feature_stream << ms2_iter->first << "\t" << (int) ms2_iter->second << endl;
           }
