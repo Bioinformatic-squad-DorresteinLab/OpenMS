@@ -278,7 +278,7 @@ protected:
             string filename = mzml_file_paths[peptide.second.first];
             Size parse_index = filename.rfind("/") + 1;
             filename = filename.substr(parse_index);
-            feature_stream << "CONSENSUS_ID=e_" << feature.getUniqueId() << endl;
+            feature_stream << "FEATURE_ID=e_" << feature.getUniqueId() << endl;
 
             feature_stream << "MSLEVEL=2" << endl;
             feature_stream << "CHARGE=" << to_string(charge == 0 ? 1 : charge) << "+" << endl;
@@ -390,7 +390,7 @@ protected:
           feature_stream << "BEGIN IONS" << endl;
 
           feature_stream << "SCANS=" << feature_count++ << endl;
-          feature_stream << "CONSENSUS_ID=e_" << feature.getUniqueId() << endl;
+          feature_stream << "FEATURE_ID=e_" << feature.getUniqueId() << endl;
 
           feature_stream << "MSLEVEL=2" << endl;
           feature_stream << "CHARGE=" << std::to_string(charge == 0 ? 1 : charge) << "+" << endl;
