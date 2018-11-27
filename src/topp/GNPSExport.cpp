@@ -101,7 +101,7 @@ protected:
     setValidFormats_("out", ListUtils::create<String>("mgf"));
 
     registerStringOption_("output_type", "<choice>", "full_spectra", "specificity of mgf output information", false);
-    setValidStrings_("output_type", ListUtils::create<String>("full_spectra,merged_spectra"));
+    setValidStrings_("output_type", ListUtils::create<String>("full_spectra,merged_spectra,most_intense"));
 
     // registerDoubleOption_("precursor_mz_tolerance", "<num>", DEF_PRECURSOR_MZ_TOLERANCE, "Tolerance mz window for precursor selection", false);
     // registerDoubleOption_("precursor_rt_tolerance", "<num>", DEF_PRECURSOR_RT_TOLERANCE, "Tolerance rt window for precursor selection", false);
@@ -364,10 +364,6 @@ protected:
             sum_mz += it_mz -> first;
             sum_intensity += it_mz->second;
             count++;
-
-            // // DEBUG: add all elements to mz_merged
-            // mz_merged.push_back(it_mz->first);
-            // intensity_merged.push_back(it_mz->second);
           }
           if(count > 0)
           {
@@ -400,6 +396,28 @@ protected:
           for (auto ms2_iter = ms2_block.begin(); ms2_iter != ms2_block.end(); ++ms2_iter)
           {
             feature_stream << ms2_iter->first << "\t" << (int) ms2_iter->second << endl;
+          }
+          feature_stream << "END IONS" << endl << endl;
+        }
+        // most intense ms2 block
+        else if(output_type == "most_intense")
+        {
+          // print
+          feature_stream << "BEGIN IONS" << endl;
+
+          feature_stream << "SCANS=" << feature_count++ << endl;
+          feature_stream << "FEATURE_ID=e_" << feature.getUniqueId() << endl;
+
+          feature_stream << "MSLEVEL=2" << endl;
+          feature_stream << "CHARGE=" << std::to_string(charge == 0 ? 1 : charge) << "+" << endl;
+          feature_stream << "PEPMASS=" << feature.getMZ() << endl;
+          feature_stream << "FILE_INDEX=" << peptides[0].second.second << endl;
+          feature_stream << "RTINSECONDS=" << peptides[0].first.second.getRT() << endl;
+
+          auto ms2_scan = ms_maps[peptides[0].second.first][peptides[0].second.second];
+          for (auto ms2_iter = ms2_scan.begin(); ms2_iter != ms2_scan.end(); ++ms2_iter)
+          {
+            feature_stream << ms2_iter->getMZ() << "\t" << (int) ms2_iter->getIntensity() << endl;
           }
           feature_stream << "END IONS" << endl << endl;
         }
