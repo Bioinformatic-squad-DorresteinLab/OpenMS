@@ -31,6 +31,8 @@ FileFilter
 FileInfo
 FileMerger
 GenericWrapper
+GNPSExport
+GNPSSiriusExport
 HighResPrecursorMassCorrector
 IDConflictResolver
 IDFileConverter

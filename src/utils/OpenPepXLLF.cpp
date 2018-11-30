@@ -33,33 +33,15 @@
 // $Authors: Eugen Netz $
 // --------------------------------------------------------------------------
 
-#include <OpenMS/ANALYSIS/XLMS/OPXLDataStructs.h>
-#include <OpenMS/ANALYSIS/XLMS/OPXLHelper.h>
-#include <OpenMS/ANALYSIS/XLMS/OPXLSpectrumProcessingAlgorithms.h>
-#include <OpenMS/ANALYSIS/XLMS/XQuestScores.h>
+#include <OpenMS/APPLICATIONS/TOPPBase.h>
+#include <OpenMS/ANALYSIS/XLMS/OpenPepXLLFAlgorithm.h>
 #include <OpenMS/FORMAT/XQuestResultXMLFile.h>
-#include <OpenMS/KERNEL/StandardTypes.h>
-#include <OpenMS/KERNEL/SpectrumHelper.h>
 #include <OpenMS/FORMAT/FASTAFile.h>
 #include <OpenMS/FORMAT/MzMLFile.h>
 #include <OpenMS/FORMAT/ConsensusXMLFile.h>
-#include <OpenMS/DATASTRUCTURES/ListUtilsIO.h>
-#include <OpenMS/APPLICATIONS/TOPPBase.h>
 #include <OpenMS/FORMAT/IdXMLFile.h>
 #include <OpenMS/FORMAT/MzIdentMLFile.h>
-#include <OpenMS/CHEMISTRY/ProteaseDigestion.h>
-#include <OpenMS/CHEMISTRY/ProteaseDB.h>
 #include <OpenMS/CHEMISTRY/ModificationsDB.h>
-#include <OpenMS/ANALYSIS/RNPXL/ModifiedPeptideGenerator.h>
-#include <OpenMS/ANALYSIS/ID/IDMapper.h>
-#include <OpenMS/ANALYSIS/ID/PeptideIndexing.h>
-#include <OpenMS/MATH/STATISTICS/StatisticFunctions.h>
-
-#include <OpenMS/CHEMISTRY/TheoreticalSpectrumGeneratorXLMS.h>
-
-#include <iostream>
-#include <cmath>
-#include <numeric>
 
 using namespace std;
 using namespace OpenMS;
@@ -170,82 +152,7 @@ protected:
     registerInputFile_("decoy_database", "<file>", "", "Input file containing the decoy protein database. Decoys can also be included in the normal database file instead (or additionally).", false, true);
     setValidFormats_("decoy_database", ListUtils::create<String>("fasta"));
 
-    registerStringOption_("decoy_string", "<string>", "decoy", "String that was appended (or prefixed - see 'prefix' flag below) to the accessions in the protein database to indicate decoy proteins.", false, false);
-    registerFlag_("decoy_prefix", "Set flag, if the decoy_string is a prefix of accessions in the protein database. Otherwise it is a suffix.", false);
-
-    registerTOPPSubsection_("precursor", "Precursor (Parent Ion) Options");
-    registerDoubleOption_("precursor:mass_tolerance", "<tolerance>", 10.0, "Width of precursor mass tolerance window", false, false);
-    StringList precursor_mass_tolerance_unit_valid_strings;
-    precursor_mass_tolerance_unit_valid_strings.push_back("ppm");
-    precursor_mass_tolerance_unit_valid_strings.push_back("Da");
-    registerStringOption_("precursor:mass_tolerance_unit", "<unit>", "ppm", "Unit of precursor mass tolerance.",  false, false);
-    setValidStrings_("precursor:mass_tolerance_unit", precursor_mass_tolerance_unit_valid_strings);
-
-    registerIntOption_("precursor:min_charge", "<num>", 3, "Minimum precursor charge to be considered.", false, true);
-    registerIntOption_("precursor:max_charge", "<num>", 7, "Maximum precursor charge to be considered.", false, true);
-    registerIntList_("precursor:corrections", "<num>", ListUtils::create<int>("2, 1, 0"), "Monoisotopic peak correction. Matches candidates for possible monoisotopic precursor peaks for experimental mass m and given numbers n at masses (m - n * (C13-C12)). These should be ordered from more extreme to less extreme corrections. Numbers later in the list will be preferred in case of ambiguities.", false, false);
-
-
-    registerTOPPSubsection_("fragment", "Fragments (Product Ion) Options");
-    registerDoubleOption_("fragment:mass_tolerance", "<tolerance>", 20.0, "Fragment mass tolerance", false, false);
-    registerDoubleOption_("fragment:mass_tolerance_xlinks", "<tolerance>", 20.0, "Fragment mass tolerance for cross-link ions", false, false);
-
-    StringList fragment_mass_tolerance_unit_valid_strings;
-    fragment_mass_tolerance_unit_valid_strings.push_back("ppm");
-    fragment_mass_tolerance_unit_valid_strings.push_back("Da");
-
-    registerStringOption_("fragment:mass_tolerance_unit", "<unit>", "ppm", "Unit of fragment m", false, false);
-    setValidStrings_("fragment:mass_tolerance_unit", fragment_mass_tolerance_unit_valid_strings);
-
-    registerTOPPSubsection_("modifications", "Modifications Options");
-    vector<String> all_mods;
-    ModificationsDB::getInstance()->getAllSearchModifications(all_mods);
-    registerStringList_("modifications:fixed", "<mods>", ListUtils::create<String>(""), "Fixed modifications, specified using UniMod (www.unimod.org) terms, e.g. 'Carbamidomethyl (C)'", false, false);
-    setValidStrings_("modifications:fixed", all_mods);
-    registerStringList_("modifications:variable", "<mods>", ListUtils::create<String>(""), "Variable modifications, specified using UniMod (www.unimod.org) terms, e.g. 'Oxidation (M)'", false, false);
-    setValidStrings_("modifications:variable", all_mods);
-    registerIntOption_("modifications:variable_max_per_peptide", "<num>", 2, "Maximum number of residues carrying a variable modification per candidate peptide", false, false);
-
-    registerTOPPSubsection_("peptide", "Peptide Options");
-    registerIntOption_("peptide:min_size", "<num>", 5, "Minimum size a peptide must have after digestion to be considered in the search.", false, false);
-    registerIntOption_("peptide:missed_cleavages", "<num>", 2, "Number of missed cleavages.", false, false);
-    vector<String> all_enzymes;
-    ProteaseDB::getInstance()->getAllNames(all_enzymes);
-    registerStringOption_("peptide:enzyme", "<cleavage site>", "Trypsin", "The enzyme used for peptide digestion.", false, false);
-    setValidStrings_("peptide:enzyme", all_enzymes);
-
-
-    registerTOPPSubsection_("cross_linker", "Cross Linker Options");
-    registerStringList_("cross_linker:residue1", "<one letter code>", ListUtils::create<String>("K,N-term"), "Comma separated residues, that the first side of a bifunctional cross-linker can attach to", false, false);
-    registerStringList_("cross_linker:residue2", "<one letter code>", ListUtils::create<String>("K,N-term"), "Comma separated residues, that the second side of a bifunctional cross-linker can attach to", false, false);
-    registerDoubleOption_("cross_linker:mass", "<mass>", 138.0680796, "Mass of the light cross-linker, linking two residues on one or two peptides", false, false);
-    registerDoubleList_("cross_linker:mass_mono_link", "<mass>", ListUtils::create<double>("156.07864431, 155.094628715"), "Possible masses of the linker, when attached to only one peptide", false, false);
-    registerStringOption_("cross_linker:name", "<string>", "DSS" ,  "Name of the searched cross-link, used to resolve ambiguity of equal masses (e.g. DSS or BS3)", false, false);
-
-    registerTOPPSubsection_("algorithm", "Algorithm Options");
-    registerFlag_("algorithm:pre_scoring", "Set flag, to use the pre-scoring heuristic. Otherwise a full enumeration will be performed.", false);
-    registerIntOption_("algorithm:number_of_scored_candidates", "<num>", 10000, "Number of candidates that are scored using the full scoring function after ranking by a faster pre-scoring function.", false, false);
-    registerIntOption_("algorithm:number_top_hits", "<num>", 5, "Number of top hits reported for each spectrum pair", false, false);
-    StringList deisotope_strings = ListUtils::create<String>("true,false,auto");
-    registerStringOption_("algorithm:deisotope", "<true/false/auto>", "auto", "Set to true, if the input spectra should be deisotoped before any other processing steps. If set to auto the spectra will be deisotoped, if the fragment mass tolerance is < 0.1 Da or < 100 ppm (0.1 Da at a mass of 1000)", false, true);
-    setValidStrings_("algorithm:deisotope", deisotope_strings);
-
-    StringList bool_strings = ListUtils::create<String>("true,false");
-    registerTOPPSubsection_("ions", "Ion types to search for");
-    registerStringOption_("ions:b_ions", "<true/false>", "true", "Search for peaks of b-ions.", false, true);
-    setValidStrings_("ions:b_ions", bool_strings);
-    registerStringOption_("ions:y_ions", "<true/false>", "true", "Search for peaks of y-ions.", false, true);
-    setValidStrings_("ions:y_ions", bool_strings);
-    registerStringOption_("ions:a_ions", "<true/false>", "false", "Search for peaks of a-ions.", false, true);
-    setValidStrings_("ions:a_ions", bool_strings);
-    registerStringOption_("ions:x_ions", "<true/false>", "false", "Search for peaks of x-ions.", false, true);
-    setValidStrings_("ions:x_ions", bool_strings);
-    registerStringOption_("ions:c_ions", "<true/false>", "false", "Search for peaks of c-ions.", false, true);
-    setValidStrings_("ions:c_ions", bool_strings);
-    registerStringOption_("ions:z_ions", "<true/false>", "false", "Search for peaks of z-ions.", false, true);
-    setValidStrings_("ions:z_ions", bool_strings);
-    registerStringOption_("ions:neutral_losses", "<true/false>", "true", "Search for neutral losses of H2O and H3N.", false, true);
-    setValidStrings_("ions:neutral_losses", bool_strings);
+    registerFullParam_(OpenPepXLLFAlgorithm().getDefaults());
 
     // output file
     registerOutputFile_("out_xquestxml", "<file>", "", "Results in the xquest.xml format (at least one of these output parameters should be set, otherwise you will not have any results).", false);
@@ -259,20 +166,6 @@ protected:
 
     registerOutputFile_("out_mzIdentML", "<file>","", "Results in mzIdentML (.mzid) format (at least one of these output parameters should be set, otherwise you will not have any results)", false);
     setValidFormats_("out_mzIdentML", ListUtils::create<String>("mzid"));
-  }
-
-  vector<ResidueModification> getModifications_(StringList modNames)
-  {
-    vector<ResidueModification> modifications;
-
-    // iterate over modification names and add to vector
-    for (StringList::iterator mod_it = modNames.begin(); mod_it != modNames.end(); ++mod_it)
-    {
-      String modification(*mod_it);
-      modifications.push_back(ModificationsDB::getInstance()->getModification(modification));
-    }
-
-    return modifications;
   }
 
   ExitCodes main_(int, const char**) override
@@ -357,13 +250,9 @@ protected:
     PeakFileOptions options;
     options.clearMSLevels();
     options.addMSLevel(2);
+    options.addMSLevel(1);
     f.getOptions() = options;
     f.load(in_mzml, unprocessed_spectra);
-
-    // preprocess spectra (filter out 0 values, sort by position)
-    progresslogger.startProgress(0, 1, "Filtering spectra...");
-    PeakMap spectra = OPXLSpectrumProcessingAlgorithms::preprocessSpectra(unprocessed_spectra, fragment_mass_tolerance_xlinks, fragment_mass_tolerance_unit_ppm, peptide_min_size, min_precursor_charge, max_precursor_charge, deisotope, false);
-    progresslogger.endProgress();
 
     // load linked features
     ConsensusMap cfeatures;
@@ -382,51 +271,28 @@ protected:
       fasta_db.reserve(fasta_db.size() + fasta_decoys.size());
       fasta_db.insert(fasta_db.end(), fasta_decoys.begin(), fasta_decoys.end());
     }
-
     progresslogger.endProgress();
 
-    const Size missed_cleavages = getIntOption_("peptide:missed_cleavages");
-    ProteaseDigestion digestor;
-    String enzyme_name = getStringOption_("peptide:enzyme");
-    digestor.setEnzyme(enzyme_name);
-    digestor.setMissedCleavages(missed_cleavages);
 
-    // set minimum size of peptide after digestion
-    Size min_peptide_length = getIntOption_("peptide:min_size");
-
-    // one identification run
+    // initialize solution vectors
     vector<ProteinIdentification> protein_ids(1);
-    protein_ids[0].setDateTime(DateTime::now());
-    protein_ids[0].setSearchEngine("OpenXQuest");
-    protein_ids[0].setSearchEngineVersion(VersionInfo::getVersion());
-    StringList ms_runs;
-    unprocessed_spectra.getPrimaryMSRunPath(ms_runs);
-    protein_ids[0].setPrimaryMSRunPath(ms_runs);
-    protein_ids[0].setMetaValue("SpectrumIdentificationProtocol", DataValue("MS:1002494")); // cross-linking search = MS:1002494
+    vector<PeptideIdentification> peptide_ids;
+
+    // these are mainly necessary for writing out xQuest type spectrum files
+    vector< vector< OPXLDataStructs::CrossLinkSpectrumMatch > > all_top_csms;
+    PeakMap spectra;
+
+    OpenPepXLLFAlgorithm search_algorithm;
+    Param this_param = getParam_().copy("", true);
+    Param algo_param = search_algorithm.getParameters();
+    algo_param.update(this_param, false, Log_debug); // suppress param. update message
+    search_algorithm.setParameters(algo_param);
+    search_algorithm.setLogType(this->log_type_);
 
     ProteinIdentification::SearchParameters search_params;
-    String searched_charges((String(min_precursor_charge)));
-    for (int ch = min_precursor_charge+1; ch <= max_precursor_charge; ++ch)
-    {
-      searched_charges += "," + String(ch);
-    }
-    search_params.charges = searched_charges;
     search_params.db = in_fasta;
-    search_params.digestion_enzyme = (*ProteaseDB::getInstance()->getEnzyme(enzyme_name));
-    search_params.fixed_modifications = fixedModNames;
-    search_params.variable_modifications = varModNames;
-    search_params.mass_type = ProteinIdentification::MONOISOTOPIC;
-    search_params.missed_cleavages = missed_cleavages;
-    search_params.fragment_mass_tolerance = fragment_mass_tolerance;
-    search_params.fragment_mass_tolerance_ppm =  fragment_mass_tolerance_unit_ppm;
-    search_params.precursor_mass_tolerance = precursor_mass_tolerance;
-    search_params.precursor_mass_tolerance_ppm = precursor_mass_tolerance_unit_ppm;
-
-    // As MetaValues
     search_params.setMetaValue("input_mzML", in_mzml);
     search_params.setMetaValue("input_decoys", in_decoy_fasta);
-    search_params.setMetaValue("decoy_prefix", decoy_prefix);
-    search_params.setMetaValue("decoy_string", decoy_string);
     search_params.setMetaValue("out_xquest_specxml", out_xquest_specxml);
 
     search_params.setMetaValue("precursor:min_charge", min_precursor_charge);
@@ -555,10 +421,7 @@ protected:
     LOG_DEBUG << "Spectra left after preprocessing and filtering: " << spectra.size() << " of " << unprocessed_spectra.size() << endl;
 #endif
 
-#ifdef _OPENMP
-#pragma omp parallel for schedule(guided)
-#endif
-    for (SignedSize scan_index = 0; scan_index < static_cast<SignedSize>(spectra.size()); ++scan_index)
+    if (exit_code != OpenPepXLLFAlgorithm::EXECUTION_OK)
     {
       const PeakSpectrum& spectrum = spectra[scan_index];
 
@@ -1186,11 +1049,7 @@ protected:
 #pragma omp critical (all_top_csms_access)
 #endif
       {
-        if (!top_csms_spectrum.empty())
-        {
-          all_top_csms.push_back(top_csms_spectrum);
-          all_top_csms_current_index = all_top_csms.size()-1;
-        }
+        return ILLEGAL_PARAMETERS;
       }
 
       // Write PeptideIdentifications and PeptideHits for n top hits
@@ -1203,24 +1062,6 @@ protected:
       LOG_DEBUG << "Next Spectrum ##################################" << endl;
 #endif
     }
-
-    // end of matching / scoring
-    progresslogger.endProgress();
-
-    // Add protein identifications
-    PeptideIndexing pep_indexing;
-    Param indexing_param = pep_indexing.getParameters();
-
-    String d_prefix = decoy_prefix ? "prefix" : "suffix";
-    indexing_param.setValue("decoy_string_position", d_prefix, "If set, protein accessions in the database contain 'decoy_string' as prefix.");
-    indexing_param.setValue("decoy_string", decoy_string, "String that was appended (or prefixed - see 'prefix' flag below) to the accessions in the protein database to indicate decoy proteins.");
-    indexing_param.setValue("missing_decoy_action", "warn");
-    indexing_param.setValue("enzyme:name", enzyme_name);
-    pep_indexing.setParameters(indexing_param);
-
-    pep_indexing.run(fasta_db, protein_ids, peptide_ids);
-
-    OPXLHelper::addProteinPositionMetaValues(peptide_ids);
 
     // write output
     progresslogger.startProgress(0, 1, "Writing output...");
@@ -1243,8 +1084,6 @@ protected:
 
       if (out_xquest.size() > 0)
       {
-        // String precursor_mass_tolerance_unit_string = precursor_mass_tolerance_unit_ppm ? "ppm" : "Da";
-        // String fragment_mass_tolerance_unit_string = fragment_mass_tolerance_unit_ppm ? "ppm" : "Da";
         XQuestResultXMLFile().store(out_xquest, protein_ids, peptide_ids);
       }
       if (out_xquest_specxml.size() > 0)

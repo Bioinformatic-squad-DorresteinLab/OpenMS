@@ -1,3 +1,36 @@
+# --------------------------------------------------------------------------
+#                   OpenMS -- Open-Source Mass Spectrometry
+# --------------------------------------------------------------------------
+# Copyright The OpenMS Team -- Eberhard Karls University Tuebingen,
+# ETH Zurich, and Freie Universitaet Berlin 2002-2018.
+#
+# This software is released under a three-clause BSD license:
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#  * Neither the name of any author or any participating institution
+#    may be used to endorse or promote products derived from this software
+#    without specific prior written permission.
+# For a full list of authors, refer to the file AUTHORS.
+# --------------------------------------------------------------------------
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL ANY OF THE AUTHORS OR THE CONTRIBUTING
+# INSTITUTIONS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# --------------------------------------------------------------------------
+# $Maintainer: Julianus Pfeuffer $
+# $Authors: Julianus Pfeuffer $
+# --------------------------------------------------------------------------
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "OpenMS developers <open-ms-general@lists.sourceforge.net>")
 if (OPENMS_64BIT_ARCHITECTURE)
   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${OPENMS_PACKAGE_VERSION_FULLSTRING}-Debian-Linux-x86_64")
@@ -31,8 +64,8 @@ set(CPACK_COMPONENTS_ALL applications doc library share ${THIRDPARTY_COMPONENT_G
 ## We should probably use a full system-shared-libs-only machine for building. Then the deps should look similar to below.
 #set(CPACK_DEBIAN_PACKAGE_DEPENDS "libsqlite3-dev, libxerces-c-dev (>= 3.1.1), libeigen3-dev, libwildmagic-dev, libboost-dev (>= 1.54.0), libboost-iostreams-dev (>= 1.54.0), libboost-date-time-dev (>= 1.54.0), libboost-math-dev (>= 1.54.0), libsvm-dev (>= 3.12), libglpk-dev (>= 4.52.1), zlib1g-dev (>= 1.2.7), libbz2-dev (>= 1.0.6), libqt4-dev (>= 4.8.2), libqt4-opengl-dev (>= 4.8.2), libqtwebkit-dev (>= 2.2.1), coinor-libcoinutils-dev (>= 2.6.4)")
 ## Autogeneration with SHLIBDEPS will add to this variable. For now we include most things statically and require the standard Qt package only.
-## (only available in Ubuntu >=17.10). For older Ubuntu, dependencies have to be ignored and manually installed e.g. from a thirdparty repo.
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "qtbase5-dev, libqt5svg5")
+## (only available in Ubuntu >=17.10). For older Ubuntu, dependencies can be installed from a thirdparty repo.
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "qtbase5-dev (>= 5.7.0) | qt57base | qt58base | qt59base | qt510base | qt511base, libqt5svg5 (>= 5.7.0) | qt57svg | qt58svg | qt59svg | qt510svg | qt511svg")
 
 SET(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 SET(CPACK_DEBIAN_PACKAGE_SECTION "science")
