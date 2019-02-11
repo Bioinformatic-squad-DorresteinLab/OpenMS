@@ -103,9 +103,6 @@ protected:
     registerStringOption_("output_type", "<choice>", "full_spectra", "specificity of mgf output information", false);
     setValidStrings_("output_type", ListUtils::create<String>("full_spectra,merged_spectra,most_intense"));
 
-    // registerDoubleOption_("precursor_mz_tolerance", "<num>", DEF_PRECURSOR_MZ_TOLERANCE, "Tolerance mz window for precursor selection", false);
-    // registerDoubleOption_("precursor_rt_tolerance", "<num>", DEF_PRECURSOR_RT_TOLERANCE, "Tolerance rt window for precursor selection", false);
-
     registerTOPPSubsection_("merged_spectra", "Options for exporting mgf file with merged spectra per feature");
     registerDoubleOption_("merged_spectra:cos_similarity", "<num>", DEF_COSINE_SIMILARITY, "Cosine similarity threshold for merged_spectra output", false);
     registerDoubleOption_("merged_spectra:ms2_bin_size", "<num>", DEF_MERGE_BIN_SIZE, "Bin size (Da) when merging ms2 scans", false);
@@ -122,15 +119,11 @@ protected:
     //-------------------------------------------------------------
     String consensus_file_path(getStringOption_("in_cm"));
     StringList mzml_file_paths(getStringList_("in_mzml"));
-
     String out(getStringOption_("out"));
-
     String output_type(getStringOption_("output_type"));
-
-    // double prec_mz_tol(getDoubleOption_("precursor_mz_tolerance"));
-    // double prec_rt_tol(getDoubleOption_("precursor_rt_tolerance"));
-
     double cos_sim_threshold(getDoubleOption_("merged_spectra:cos_similarity"));
+
+    ofstream output_file(out);
 
     //-------------------------------------------------------------
     // reading input
@@ -158,13 +151,13 @@ protected:
     // calculations
     //-------------------------------------------------------------
     progress_logger.startProgress(0, consensus_map.size(), "parsing features and ms2 identifications...");
-    std::stringstream output_stream;
+    // std::stringstream output_stream;
     Size feature_count = 1;
     for (Size i = 0; i < consensus_map.size(); ++i)
     {
       progress_logger.setProgress(i);
       // current feature
-      const ConsensusFeature& feature = consensus_map[i];
+      const ConsensusFeature feature = consensus_map[i];
 
       // store "mz rt" information from each scan
       stringstream scans_output;
@@ -173,7 +166,7 @@ protected:
       // determining charge and most intense feature for header
       BaseFeature::ChargeType charge = feature.getCharge();
       for (ConsensusFeature::HandleSetType::const_iterator feature_iter = feature.begin();
-      feature_iter != feature.end(); ++feature_iter)
+        feature_iter != feature.end(); ++feature_iter)
       {
         if (feature_iter->getCharge() > charge)
         {
@@ -262,28 +255,27 @@ protected:
         });
 
         // tmp stream for current feature
-        stringstream feature_stream;
-        feature_stream << setprecision(4) << fixed;
+        output_file << setprecision(4) << fixed;
 
         // full spectra
         if (output_type == "full_spectra")
         {
           for (auto peptide : peptides)
           {
-            feature_stream << "BEGIN IONS" << endl;
+            output_file << "BEGIN IONS" << endl;
 
-            feature_stream << "SCANS=" << to_string(feature_count) << endl;
+            output_file << "SCANS=" << to_string(feature_count) << endl;
 
             string filename = mzml_file_paths[peptide.second.first];
             Size parse_index = filename.rfind("/") + 1;
             filename = filename.substr(parse_index);
-            feature_stream << "FEATURE_ID=e_" << feature.getUniqueId() << endl;
+            output_file << "FEATURE_ID=e_" << feature.getUniqueId() << endl;
 
-            feature_stream << "MSLEVEL=2" << endl;
-            feature_stream << "CHARGE=" << to_string(charge == 0 ? 1 : charge) << "+" << endl;
-            feature_stream << "PEPMASS=" << feature.getMZ() << endl;
-            feature_stream << "FILE_INDEX=" << peptide.second.second << endl;
-            feature_stream << "RTINSECONDS=" << peptide.first.second.getRT() << endl;
+            output_file << "MSLEVEL=2" << endl;
+            output_file << "CHARGE=" << to_string(charge == 0 ? 1 : charge) << "+" << endl;
+            output_file << "PEPMASS=" << feature.getMZ() << endl;
+            output_file << "FILE_INDEX=" << peptide.second.second << endl;
+            output_file << "RTINSECONDS=" << peptide.first.second.getRT() << endl;
 
             auto ms2_scan = ms_maps[peptide.second.first][peptide.second.second];
             // sort spectra
@@ -294,10 +286,10 @@ protected:
 
             for (Size l = 0; l < ms2_scan.size(); l++)
             {
-              feature_stream << ms2_scan[l].getMZ() << "\t" << (int) ms2_scan[l].getIntensity() << endl;
+              output_file << ms2_scan[l].getMZ() << "\t" << (int) ms2_scan[l].getIntensity() << endl;
             }
 
-            feature_stream << "END IONS" << endl << endl;
+            output_file << "END IONS" << endl << endl;
           }
           feature_count++;
         }
@@ -382,64 +374,63 @@ protected:
           }
 
           // print
-          feature_stream << "BEGIN IONS" << endl;
+          output_file << "BEGIN IONS" << endl;
 
-          feature_stream << "SCANS=" << feature_count++ << endl;
-          feature_stream << "FEATURE_ID=e_" << feature.getUniqueId() << endl;
+          output_file << "SCANS=" << feature_count++ << endl;
+          output_file << "FEATURE_ID=e_" << feature.getUniqueId() << endl;
 
-          feature_stream << "MSLEVEL=2" << endl;
-          feature_stream << "CHARGE=" << std::to_string(charge == 0 ? 1 : charge) << "+" << endl;
-          feature_stream << "PEPMASS=" << feature.getMZ() << endl;
-          feature_stream << "FILE_INDEX=" << peptides[0].second.second << endl;
-          feature_stream << "RTINSECONDS=" << peptides[0].first.second.getRT() << endl;
+          output_file << "MSLEVEL=2" << endl;
+          output_file << "CHARGE=" << std::to_string(charge == 0 ? 1 : charge) << "+" << endl;
+          output_file << "PEPMASS=" << feature.getMZ() << endl;
+          output_file << "FILE_INDEX=" << peptides[0].second.second << endl;
+          output_file << "RTINSECONDS=" << peptides[0].first.second.getRT() << endl;
 
           for (auto ms2_iter = ms2_block.begin(); ms2_iter != ms2_block.end(); ++ms2_iter)
           {
-            feature_stream << ms2_iter->first << "\t" << (int) ms2_iter->second << endl;
+            output_file << ms2_iter->first << "\t" << (int) ms2_iter->second << endl;
           }
-          feature_stream << "END IONS" << endl << endl;
+          output_file << "END IONS" << endl << endl;
         }
         // most intense ms2 block
         else if(output_type == "most_intense")
         {
           // print
-          feature_stream << "BEGIN IONS" << endl;
+          output_file << "BEGIN IONS" << endl;
 
-          feature_stream << "SCANS=" << feature_count++ << endl;
-          feature_stream << "FEATURE_ID=e_" << feature.getUniqueId() << endl;
+          output_file << "SCANS=" << feature_count++ << endl;
+          output_file << "FEATURE_ID=e_" << feature.getUniqueId() << endl;
 
-          feature_stream << "MSLEVEL=2" << endl;
-          feature_stream << "CHARGE=" << std::to_string(charge == 0 ? 1 : charge) << "+" << endl;
-          feature_stream << "PEPMASS=" << feature.getMZ() << endl;
-          feature_stream << "FILE_INDEX=" << peptides[0].second.second << endl;
-          feature_stream << "RTINSECONDS=" << peptides[0].first.second.getRT() << endl;
+          output_file << "MSLEVEL=2" << endl;
+          output_file << "CHARGE=" << std::to_string(charge == 0 ? 1 : charge) << "+" << endl;
+          output_file << "PEPMASS=" << feature.getMZ() << endl;
+          output_file << "FILE_INDEX=" << peptides[0].second.second << endl;
+          output_file << "RTINSECONDS=" << peptides[0].first.second.getRT() << endl;
 
           auto ms2_scan = ms_maps[peptides[0].second.first][peptides[0].second.second];
           for (auto ms2_iter = ms2_scan.begin(); ms2_iter != ms2_scan.end(); ++ms2_iter)
           {
-            feature_stream << ms2_iter->getMZ() << "\t" << (int) ms2_iter->getIntensity() << endl;
+            output_file << ms2_iter->getMZ() << "\t" << (int) ms2_iter->getIntensity() << endl;
           }
-          feature_stream << "END IONS" << endl << endl;
+          output_file << "END IONS" << endl << endl;
         }
 
         // output feature information to general outputStream
-        output_stream << feature_stream.str() << endl;
+        output_file << endl;
       }
       // should skip printing feature ms2 spectra block
       else
       {
-        cout << "here" << endl;
         // print empty block
-        output_stream << "BEGIN IONS" << endl;
+        output_file << "BEGIN IONS" << endl;
 
-        output_stream << "SCANS=" << feature_count++ << endl;
-        output_stream << "FEATURE_ID=e_" << feature.getUniqueId() << endl;
-        output_stream << "MSLEVEL=2" << endl;
-        output_stream << "CHARGE=" << std::to_string(charge == 0 ? 1 : charge) << "+" << endl;
-        output_stream << "PEPMASS=" << feature.getMZ() << endl;
-        output_stream << "RTINSECONDS=" << feature.getRT() << endl;
+        output_file << "SCANS=" << feature_count++ << endl;
+        output_file << "FEATURE_ID=e_" << feature.getUniqueId() << endl;
+        output_file << "MSLEVEL=2" << endl;
+        output_file << "CHARGE=" << std::to_string(charge == 0 ? 1 : charge) << "+" << endl;
+        output_file << "PEPMASS=" << feature.getMZ() << endl;
+        output_file << "RTINSECONDS=" << feature.getRT() << endl;
 
-        output_stream << "END IONS" << endl << endl << endl;
+        output_file << "END IONS" << endl << endl << endl;
       }
     }
     progress_logger.endProgress();
@@ -447,10 +438,6 @@ protected:
     //-------------------------------------------------------------
     // writing output
     //-------------------------------------------------------------
-    ofstream output_file(out);
-    progress_logger.startProgress(0, 1, "writing mgf file");
-    output_file << output_stream.str();
-    progress_logger.endProgress();
     output_file.close();
 
     return EXECUTION_OK;
