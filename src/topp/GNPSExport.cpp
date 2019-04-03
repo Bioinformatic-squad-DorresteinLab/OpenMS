@@ -28,8 +28,9 @@
 // ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 // --------------------------------------------------------------------------
-// $Maintainer: UCSD Dorrestein Lab $
-// $Authors: Abinesh Sarvepalli $
+// $Maintainer: Dorrestein Lab - University of California San Diego - https://dorresteinlab.ucsd.edu/$
+// $Authors: Abinesh Sarvepalli and Louis Felix Nothias$
+// $Contributors: Fabian Aicheler and Oliver Alka from Oliver Kohlbacher's group at Tubingen University$
 // --------------------------------------------------------------------------
 
 //----------------------------------------------------------
@@ -37,20 +38,63 @@
 //----------------------------------------------------------
 /**
   @page UTILS_GNPSExport GNPSExport
-  @brief Export MS/MS data in .MGF format for GNPS (http://gnps.ucsd.edu).
-GNPS (Global Natural Products Social Molecular Networking, http://gnps.ucsd.edu) is an open-access knowledge base for community-wide organisation and sharing of raw, processed or identified tandem mass (MS/MS) spectrometry data. The GNPS web-platform makes possible to perform spectral library search against public MS/MS spectral libraries, as well as to perform various data analysis such as MS/MS molecular networking, network annotation propagation (http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006089), and the Dereplicator-based annotation (https://www.nature.com/articles/nchembio.2219). The GNPS manuscript is available here: https://www.nature.com/articles/nbt.3597
+  @brief Process and export MS/MS data (.MGF format) from a consensusXML file.
 
-This tool was developed for the OpenMS-GNPS workflow. It can be accessed on GNPS (https://gnps.ucsd.edu/ProteoSAFe/static/gnps-experimental.jsp). The steps used by that workflow are as following:
+This tool was developed for the Feature Based Molecular Networking (FBMN) workflow on GNPS (https://gnps.ucsd.edu/ProteoSAFe/static/gnps-splash2.jsp)
+See the FBMN workflow documentation here (https://ccms-ucsd.github.io/GNPSDocumentation/featurebasedmolecularnetworking/)
+
+In brief, after running an OpenMS "metabolomics" pipeline, the consensusXML file is used to export files needed for FBMN on GNPS.
+These two files are:
+	- The MS/MS spectral data file (.MGF format) which is generated  with the GNPSExport util.
+	- The feature quantification table (.TXT format) which is generated with the TextExport util.
+	
+Requirements: 
+	- The IDMapper has to be ran on the featureXML files, in order to associate MS/MS scan(s) (peptide identification) 
+	with each features. These peptide identifications are used by the GNPSExport.
+	- The FileFilter has to be ran on the consensusXML file, prior to the GNPSExport, in order to remove consensusElements 
+	without MS/MS scans (peptide identification).
+
+Parameters: 
+	- Cosine Score Treshold @Abi please describe what is is doing EXACTLY 
+	- Binning @Abi please describe what is is doing EXACTLY
+	
+	@Abi: are we using a max number of peptide annotations ? If yes how is it define currently ?
+
+Options for the GNPSExport spectral processing are:
+	- Most intense: the GNPSExport will output the MS/MS scan with the highest precursor ion intensity 
+	as a representative MS/MS scan per consensusElement in the .MGF file.
+	- Merge: the GNPSExport will first merge all the MS/MS scans for a consensusElement, 
+	using the user-specified parameters (cosine score threshold, binning width), and output 
+	the merged MS/MS scan as as a representative MS/MS scan per consensusElement in the .MGF file.
+	- All MS/MS: the GNPSExport will output all the MS/MS scan(s) for consensusElements in the .MGF file.
+
+A representative OpenMS-GNPS workflow has the following steps:
   1. Input mzML files
-  2. Run the FeatureFinderMetabo tool
-  3. Run the IDMapper tool
-  4. Run the MapAlignerPoseClustering tool
-  5. Run the FeautureLinkerUnlabeledKD tool
-  6. Run the FileConverter tool (output FeatureXML format)
-  7. Run the MetaboliteAdductDecharger
-  8. Run the GNPSExport to export an .MGF
-  9. Upload the .MGF file on http://gnps.ucsd.edu and follow the instructions here:
+  2. Run the FeatureFinderMetabo tool on the mzML files.
+  3. Run the IDMapper tool on the featureXML and mzML files.
+  4. Run the MapAlignerPoseClustering tool on the featureXML files.
+  5. Run the MetaboliteAdductDecharger on the featureXML files.
+  6. Run the FeatureLinkerUnlabeledKD tool or FeatureLinkerUnlabeledQT, on the featureXML files and output a consensusXML file.
+  8. Run the FileFilter on the consensusXML file to keep only consensusElements with at least MS/MS scan (peptide identification).  
+  9. Run the GNPSExport on the "filtered consensusXML file" to export an .MGF file.
+  10. Run the TextExport on the "filtered consensusXML file" to export an .TXT file.
+  11. Upload your files to GNPS and run the Feature-Based Molecular Networking workflow. Instructions are here:
 https://ccms-ucsd.github.io/GNPSDocumentation/featurebasedmolecularnetworking/
+
+The GitHub for that ProteoSAFe workflow and an OpenMS python wrappers is available here:
+https://github.com/Bioinformatic-squad-DorresteinLab/openms-gnps-workflow
+
+An online version of the OpenMS-GNPS pipeline for FBMN running on CCMS server (http://proteomics.ucsd.edu/) is available on GNPS:
+https://ccms-ucsd.github.io/GNPSDocumentation/featurebasedmolecularnetworking-with-OpenMS
+
+GNPS (Global Natural Products Social Molecular Networking, https://gnps.ucsd.edu/ProteoSAFe/static/gnps-splash2.jsp)
+is an open-access knowledge base for community-wide organisation and sharing of raw, processed
+or identified tandem mass (MS/MS) spectrometry data. 
+The GNPS web-platform makes possible to perform spectral library search against public MS/MS spectral libraries, 
+as well as to perform various data analysis such as MS/MS molecular networking, Network Annotation Propagation 
+Network Annotation Propagation (http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006089)
+and the DEREPLICATOR (https://www.nature.com/articles/nchembio.2219)
+The GNPS paper is available here (https://www.nature.com/articles/nbt.3597)
 
   <B>The command line parameters of this tool are:</B>
   @verbinclude UTILS_SiriusAdapter.cli
