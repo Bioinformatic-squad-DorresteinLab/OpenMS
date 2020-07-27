@@ -30,7 +30,7 @@
 // --------------------------------------------------------------------------
 // $Maintainer: Dorrestein Lab - University of California San Diego - https://dorresteinlab.ucsd.edu/$
 // $Authors: Abinesh Sarvepalli and Louis Felix Nothias$
-// $Contributors: Fabian Aicheler and Oliver Alka from Oliver Kohlbacher's group at Tubingen University$
+// $Contributors: Fabian Aicheler, Oliver Alka from Oliver Kohlbacher's group at Tubingen University$
 // --------------------------------------------------------------------------
 
 //----------------------------------------------------------
@@ -39,27 +39,27 @@
 /**
   @page TOPP_GNPSExport GNPSExport
 
-  @brief Export MS/MS data in .MGF format for GNPS (http://gnps.ucsd.edu).
+  @brief Export MS/MS data in .MGF format for Feature-Based Molecular Networking on GNPS (https://gnps.ucsd.edu).
 
-GNPS (Global Natural Products Social Molecular Networking, http://gnps.ucsd.edu) is an open-access knowledge base for community-wide organisation and sharing of raw, processed or identified tandem mass (MS/MS) spectrometry data. The GNPS web-platform makes possible to perform spectral library search against public MS/MS spectral libraries, as well as to perform various data analysis such as MS/MS molecular networking, network annotation propagation (http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006089), and the Dereplicator-based annotation (https://www.nature.com/articles/nchembio.2219). The GNPS manuscript is available here: https://www.nature.com/articles/nbt.3597
-
-This tool was developed for the Feature Based Molecular Networking (FBMN) workflow on GNPS (https://gnps.ucsd.edu/ProteoSAFe/static/gnps-splash2.jsp)
+GNPS (Global Natural Products Social Molecular Networking, https://gnps.ucsd.edu) is an open-access knowledge base for community-wide organisation and 
+sharing of raw, processed or annotated tandem mass (MS/MS) spectrometry data. The GNPS web-platform makes possible to perform spectral library search 
+against public MS/MS spectral libraries, as well as to perform various data analysis such as MS/MS molecular networking, such NAP, MS2LDA, SIRIUS, 
+or DEREPLICATOR/NPDtools (https://github.com/ablab/npdtools).
 
 Please cite our preprint: Nothias, L.F. et al, Feature-based Molecular Networking in the GNPS Analysis Environment
 bioRxiv 812404 (2019) (https://www.biorxiv.org/content/10.1101/812404v1)
 
-See the FBMN workflow documentation here (https://ccms-ucsd.github.io/GNPSDocumentation/featurebasedmolecularnetworking/)
+See the FBMN workflow documentation at https://ccms-ucsd.github.io/GNPSDocumentation/featurebasedmolecularnetworking/
 
 In brief, after running an OpenMS "metabolomics" pipeline, the GNPSExport TOPP tool can be used
 on the consensusXML file and corresponding mzML files to generate the files needed for FBMN on GNPS.
 These two files are:
-
-	- The MS/MS spectral data file (.MGF format) which is generated  with the GNPSExport util.
+	- The MS/MS spectral summary file (.MGF format) that is generated with the GNPSExport util.
 	- The feature quantification table (.TXT format) which is generated with the TextExport util.
 
-For each consensusElement in the consensusXML file, the GNPSExport produces one representative consensus
-MS/MS spectrum (named peptide annotation in OpenMS jargon) outputed in the MS/MS spectral file (.MGF file).
-Several modes for the generation of the consensus MS/MS spectrum are available and described below.
+For each consensusElement in the consensusXML file, the GNPSExport produces one representative MS/MS spectrum 
+(named peptide annotation in OpenMS jargon) that is outputed in the MS/MS spectral file (.MGF file).
+Sev for the generation of the consensus MS/MS spectrum are available and described below.
 Note that these parameters are defined in the GNPSExport INI parameters file.
 
 Representative command:
@@ -71,10 +71,12 @@ The GNPSExport TOPP tool can be run on a consensusXML file and the corresponding
 and corresponding feature quantification table (.TXT format) that contains the LC-MS peak area intensity.
 
 Requirements:
-	- The IDMapper has to be run on the featureXML files, in order to associate MS2 scan(s) (peptide annotation) with each
-	features. These peptide annotations are used by the GNPSExport.
+	- The IDMapper has to be run on the featureXML files, in order to associate MS2 scan(s) ("peptide annotation") with each
+	features. These MS2 scans are used by the GNPSExport.
 	- The FileFilter has to be run on the consensusXML file, prior to the GNPSExport, in order to remove consensusElements
 	without MS2 scans (peptide annotation).
+	- Note that mass accuracy and the retention time window for the pairing between MS2 scans and a LC-MS feature
+	or consensusElement is defined at the IDMapper tool step for features.
 
 Parameters:
 	- Binning (ms2_bin_size): Defines the binning width of fragment ions during the merging of eligible MS/MS spectra.
@@ -82,18 +84,12 @@ Parameters:
 
   - Output Type (output_type):
 Options for outputing GNPSExport spectral processing are:
-    -# [RECOMMENDED] merged_spectra
-      For each consensusElement, the GNPSExport will merge all the eligible MS/MS scans into one representative consensus MS/MS spectrum.
-      Eligible MS/MS scans have a pairwise cosine similarity with the MS/MS scan of highest precursor intensity above the Cosine Similarity Treshold.
-	    The fragment ions of merged MS/MS scans are binned in m/z (or Da) range defined by the Binning width parameter.
-      .
-	  -# Most intense: most_intense - For each consensusElement, the GNPSExport will output the most intense MS/MS scan (with the highest precursor ion intensity) as consensus MS/MS spectrum.
-      .
+	-# most_intense - For each consensusElement, the GNPSExport will output the most intense MS/MS scan (with the highest precursor ion intensity) as consensus MS/MS spectrum.
+	-# merged_spectra [Experimental] - For each consensusElement, the GNPSExport will merge all the eligible MS2 scans into one representative MS2 spectrum.
+        Eligible MS2 scans have a pairwise cosine similarity with the MS/MS scan of highest precursor intensity above the Cosine Similarity Treshold.
+        The fragment ions of merged MS/MS scans are binned in m/z (or Da) range defined by the Binning width parameter.
 
-Note that mass accuracy and the retention time window for the pairing between MS/MS scans and a LC-MS feature
-or consensusElement is defined at the IDMapper tool step.
-
-A representative OpenMS-GNPS workflow would sequentially use these OpenMS TOPP tools:
+A representative OpenMS metabollomics workflow would sequentially use this sequence of OpenMS TOPP tools:
   1. Input mzML files
   2. Run the @ref TOPP_FeatureFinderMetabo tool on the mzML files.
   3. Run the @ref TOPP_IDMapper tool on the featureXML and mzML files.
@@ -103,23 +99,7 @@ A representative OpenMS-GNPS workflow would sequentially use these OpenMS TOPP t
   8. Run the @ref TOPP_FileFilter on the consensusXML file to keep only consensusElements with at least MS/MS scan (peptide identification).
   9. Run the @ref TOPP_GNPSExport on the "filtered consensusXML file" to export an .MGF file.
   10. Run the @ref TOPP_TextExporter on the "filtered consensusXML file" to export an .TXT file.
-  11. Upload your files to GNPS and run the Feature-Based Molecular Networking workflow. Instructions are here:
-https://ccms-ucsd.github.io/GNPSDocumentation/featurebasedmolecularnetworking/
-
-The GitHub for that ProteoSAFe workflow and an OpenMS python wrappers is available here:
-https://github.com/Bioinformatic-squad-DorresteinLab/openms-gnps-workflow
-
-An online version of the OpenMS-GNPS pipeline for FBMN running on CCMS server (http://proteomics.ucsd.edu/) is available on GNPS:
-https://ccms-ucsd.github.io/GNPSDocumentation/featurebasedmolecularnetworking-with-OpenMS
-
-GNPS (Global Natural Products Social Molecular Networking, https://gnps.ucsd.edu/ProteoSAFe/static/gnps-splash2.jsp)
-is an open-access knowledge base for community-wide organisation and sharing of raw, processed
-or identified tandem mass (MS/MS) spectrometry data.
-The GNPS web-platform makes possible to perform spectral library search against public MS/MS spectral libraries,
-as well as to perform various data analysis such as MS/MS molecular networking, Network Annotation Propagation
-Network Annotation Propagation (http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006089)
-and the DEREPLICATOR (https://www.nature.com/articles/nchembio.2219)
-The GNPS paper is available here (https://www.nature.com/articles/nbt.3597)
+  11. Upload your files to GNPS and run the Feature-Based Molecular Networking workflow.
 
   <B>The command line parameters of this tool are:</B>
   @verbinclude TOPP_GNPSExport.cli
