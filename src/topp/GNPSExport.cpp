@@ -22,13 +22,13 @@
 // INSTITUTIONS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
 // EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
 // PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-// OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,$
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 // ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 // --------------------------------------------------------------------------
-// $Maintainer: Dorrestein Lab - University of California San Diego - https://dorresteinlab.ucsd.edu/$
+// $Maintainer: Dorrestein Lab - University of California San Diego - https://dorresteinlab.ucsd.edu/
 // $Authors: Abinesh Sarvepalli and Louis Felix Nothias$
 // $Contributors: Fabian Aicheler and Oliver Alka from Oliver Kohlbacher's group at Tubingen University$
 // --------------------------------------------------------------------------
@@ -43,7 +43,7 @@
 
 GNPS (Global Natural Products Social Molecular Networking, http://gnps.ucsd.edu) is an open-access knowledge base for community-wide organisation and sharing of raw, processed or identified tandem mass (MS/MS) spectrometry data. The GNPS web-platform makes possible to perform spectral library search against public MS/MS spectral libraries, as well as to perform various data analysis such as MS/MS molecular networking, network annotation propagation (http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006089), and the Dereplicator-based annotation (https://www.nature.com/articles/nchembio.2219). The GNPS manuscript is available here: https://www.nature.com/articles/nbt.3597
 
-This tool was developed for the Feature Based Molecular Networking (FBMN) workflow on GNPS (https://gnps.ucsd.edu/ProteoSAFe/static/gnps-splash2.jsp)
+This tool was developed for the Feature Based Molecular Networking (FBMN) workflow on GNPS (https://gnps.ucsd.edu/ProteoSAFe)
 
 Please cite our preprint: Nothias, L.F. et al, Feature-based Molecular Networking in the GNPS Analysis Environment
 bioRxiv 812404 (2019) (https://www.biorxiv.org/content/10.1101/812404v1)
@@ -65,13 +65,13 @@ Note that these parameters are defined in the GNPSExport parameters file (.INI f
 Representative command:
 GNPSExport -ini iniFile-GNPSExport.ini -in_cm filefilter.consensusXML -in_mzml inputFile0.mzML inputFile1.mzML -out GNPSExport_output.mgf
 
-The GNPSExport TOPP tool can be ran on a consensusXML file and the corresponding mzML files to generate a MS/MS spectral file (MGF format)
+The GNPSExport TOPP tool can be run on a consensusXML file and the corresponding mzML files to generate a MS/MS spectral file (MGF format)
 and corresponding feature quantification table (.TXT format) that contains the LC-MS peak area intensity.
 
 Requirements:
-	- The IDMapper has to be ran on the featureXML files, in order to associate MS2 scan(s) (peptide annotation) with each
+	- The IDMapper has to be run on the featureXML files, in order to associate MS2 scan(s) (peptide annotation) with each
 	features. These peptide annotations are used by the GNPSExport.
-	- The FileFilter has to be ran on the consensusXML file, prior to the GNPSExport, in order to remove consensusElements
+	- The FileFilter has to be run on the consensusXML file, prior to the GNPSExport, in order to remove consensusElements
 	without MS2 scans (peptide annotation).
 
 Parameters:
@@ -95,16 +95,16 @@ Options for the GNPSExport spectral processing are:
 Note that mass accuracy and the retention time window for the pairing between MS/MS scans and a LC-MS feature
 orconsensusElement is defined at the IDMapper tool step.
 
-A representative OpenMS-GNPS workflow would sequencially use these OpenMS TOPP tools:
+A representative OpenMS-GNPS workflow would sequentially use these OpenMS TOPP tools:
   1. Input mzML files
-  2. Run the FeatureFinderMetabo tool on the mzML files.
-  3. Run the IDMapper tool on the featureXML and mzML files.
-  4. Run the MapAlignerPoseClustering tool on the featureXML files.
-  5. Run the MetaboliteAdductDecharger on the featureXML files.
-  6. Run the FeatureLinkerUnlabeledKD tool or FeatureLinkerUnlabeledQT, on the featureXML files and output a consensusXML file.
-  8. Run the FileFilter on the consensusXML file to keep only consensusElements with at least MS/MS scan (peptide identification).
-  9. Run the GNPSExport on the "filtered consensusXML file" to export an .MGF file.
-  10. Run the TextExport on the "filtered consensusXML file" to export an .TXT file.
+  2. Run the @ref FeatureFinderMetabo tool on the mzML files.
+  3. Run the @ref IDMapper tool on the featureXML and mzML files.
+  4. Run the @ref MapAlignerPoseClustering tool on the featureXML files.
+  5. Run the @ref MetaboliteAdductDecharger on the featureXML files.
+  6. Run the @ref FeatureLinkerUnlabeledKD tool or FeatureLinkerUnlabeledQT, on the featureXML files and output a consensusXML file.
+  8. Run the @ref FileFilter on the consensusXML file to keep only consensusElements with at least MS/MS scan (peptide identification).
+  9. Run the @ref GNPSExport on the "filtered consensusXML file" to export an .MGF file.
+  10. Run the @ref TextExporter on the "filtered consensusXML file" to export an .TXT file.
   11. Upload your files to GNPS and run the Feature-Based Molecular Networking workflow. Instructions are here:
 https://ccms-ucsd.github.io/GNPSDocumentation/featurebasedmolecularnetworking/
 
@@ -153,6 +153,9 @@ public:
     TOPPBase("GNPSExport", "Tool to export representative consensus MS/MS scan per consensusElement into a .MGF file format. \
     See the documentation on https://ccms-ucsd.github.io/GNPSDocumentation/featurebasedmolecularnetworking_with_openms", false) {}
 
+  /**
+   * 
+   */
   void generateMSMSSpectrumBins(
     vector<pair<double,double>>& mz_int_pairs,
     double delta_mz,
@@ -186,7 +189,6 @@ public:
           intensity_merged.push_back(sum_intensity);
         }
 
-        last_mz = it_mz->first;
         sum_mz = 0;
         count = 0;
         sum_intensity = 0;
@@ -197,7 +199,7 @@ public:
       count++;
     }
     //remaining scans in last bucket
-    if(count > 0)
+    if (count > 0)
     {
       mz_merged.push_back(sum_mz/count);
       intensity_merged.push_back(sum_intensity);
@@ -205,7 +207,7 @@ public:
 
     // map mz and intensity
     // map<double,double>* ms2_block = new map<double,double>();
-    for(unsigned int ms2_block_index = 0; ms2_block_index < mz_merged.size(); ms2_block_index++)
+    for (unsigned int ms2_block_index = 0; ms2_block_index < mz_merged.size(); ms2_block_index++)
     {
       ms2_block[mz_merged[ms2_block_index]] = intensity_merged[ms2_block_index];
     }
@@ -213,7 +215,7 @@ public:
     // return would be the reformatted map<double,double> ms2_block passed in by value
   }
 
-  void sortElementMapsByIntensity(const ConsensusFeature& feature, vector<pair<int,double>>& element_maps)
+  void sortElementMapsByIntensity_(const ConsensusFeature& feature, vector<pair<int,double>>& element_maps)
   {
     // convert element maps to vector of pair<int,double>(map, intensity)    
     for (ConsensusFeature::HandleSetType::const_iterator feature_iter = feature.begin();\
@@ -237,11 +239,11 @@ public:
     vector<pair<int,int>>& pepts
   )
   {
-    for (pair<int,double> element_pair : sorted_element_maps)
+    for (pair<int,double>& element_pair : sorted_element_maps)
     {
       int element_map = element_pair.first;
       vector<PeptideIdentification> feature_pepts = feature.getPeptideIdentifications();
-      for (PeptideIdentification pept_id : feature_pepts)
+      for (PeptideIdentification& pept_id : feature_pepts)
       {
         if (pept_id.metaValueExists("spectrum_index") && pept_id.metaValueExists("map_index")
             && (int)pept_id.getMetaValue("map_index") == element_map)
@@ -281,8 +283,10 @@ protected:
     setValidFormats_("in_mzml", ListUtils::create<String>("mzML"));
 
     registerIntOption_("peptide_cutoff", "<num>", DEF_PEPT_CUTOFF, "Number of most intense peptides to consider per consensus element; -1 to consider all identifications", false);
+    setMinInt_("peptide_cutoff", -1);
     // registerIntOption_("msmap_cache", "<num>", DEF_MSMAP_CACHE, "Number of msmaps that can be cached during export for optimized performance", false, true);
     registerDoubleOption_("ms2_bin_size", "<num>", DEF_MERGE_BIN_SIZE, "Bin size (Da) for fragment ions when merging ms2 scans", false);
+    setMinFloat_("ms2_bin_size", -1);
 
     registerOutputFile_("out", "<file>", "", "Output MGF file");
     setValidFormats_("out", ListUtils::create<String>("mgf"));
@@ -292,7 +296,10 @@ protected:
 
     registerTOPPSubsection_("merged_spectra", "Options for exporting mgf file with merged spectra per consensusElement");
     registerDoubleOption_("merged_spectra:precursor_mass_tolerance", "<num>", DEF_PREC_MASS_TOL, "Precursor mass tolerance (Da) for ms annotations", false);
+    setMinFloat_("merged_spectra:precursor_mass_tolerance", 0);
     registerDoubleOption_("merged_spectra:cos_similarity", "<num>", DEF_COSINE_SIMILARITY, "Cosine similarity threshold for merged_spectra output", false);
+    setMinFloat_("merged_spectra:cos_similarity", 0);
+    setMaxFloat_("merged_spectra:cos_similarity", 1);
   }
 
   // the main function is called after all parameters are read
@@ -345,7 +352,7 @@ protected:
     progress_logger.startProgress(0, consensus_map.size(), "parsing features and ms2 identifications...");
     for (Size cons_i = 0; cons_i < consensus_map.size(); ++cons_i)
     {
-      const ConsensusFeature feature = consensus_map[cons_i];
+      const ConsensusFeature& feature = consensus_map[cons_i];
 
       //
       // determine feature's charge
@@ -364,7 +371,7 @@ protected:
       // compute most intense peptide identifications (based on precursor intensity)
       //
       vector<pair<int,double>> element_maps;
-      sortElementMapsByIntensity(feature, element_maps);
+      sortElementMapsByIntensity_(feature, element_maps);
       vector<pair<int,int>> pepts;
       getElementPeptideIdentificationsByElementIntensity(feature, element_maps, pepts);
 
@@ -406,28 +413,26 @@ protected:
         generateMSMSSpectrumBins(mz_int_pairs, bin_width, ms2_block);      
 
         // write output
-        output_file << "BEGIN IONS" << endl;
-        output_file << "OUTPUT=" << output_type << endl;
-
-        output_file << "SCANS=" << (cons_i+1) << endl;
-        output_file << "FEATURE_ID=e_" << feature.getUniqueId() << endl;
-
-        output_file << "MSLEVEL=2" << endl;
-        output_file << "CHARGE=" << to_string(charge == 0 ? 1 : charge) << "+" << endl;
-        output_file << "PEPMASS=" << feature.getMZ() << endl;
-        output_file << "FILE_INDEX=" << spec_index << endl;
-        output_file << "RTINSECONDS=" << spec.getRT() << endl;
+        output_file << "BEGIN IONS" << "\n"
+                    << "OUTPUT=" << output_type << "\n"
+                    << "SCANS=" << (cons_i+1) << "\n"
+                    << "FEATURE_ID=e_" << feature.getUniqueId() << "\n"
+                    << "MSLEVEL=2" << "\n"
+                    << "CHARGE=" << to_string(charge == 0 ? 1 : charge) << "+" << "\n"
+                    << "PEPMASS=" << feature.getMZ() << "\n"
+                    << "FILE_INDEX=" << spec_index << "\n"
+                    << "RTINSECONDS=" << spec.getRT() << "\n";
 
         output_file << fixed << setprecision(4);
         for (auto ms2_iter = ms2_block.begin(); ms2_iter != ms2_block.end(); ++ms2_iter)
         {
           if ((int) ms2_iter->second > 0)
           {
-            output_file << ms2_iter->first << "\t" << (int) ms2_iter->second << endl;
+            output_file << ms2_iter->first << "\t" << (int) ms2_iter->second << "\n";
           }
         }
       
-        output_file << "END IONS" << endl << endl;
+        output_file << "END IONS" << "\n" << endl;
       }
       // else output selection is 'merged_spectra' or 'full_spectra'
       else
@@ -466,7 +471,7 @@ protected:
 
           vector<pair<double,double>> mz_int_pairs;
 
-          for (pair<int,int> pept : pepts)
+          for (pair<int,int>& pept : pepts)
           {
             int map_index = pept.first;
             int spec_index = pept.second;
@@ -489,28 +494,26 @@ protected:
           generateMSMSSpectrumBins(mz_int_pairs, bin_width, ms2_block);
 
           // write output
-          output_file << "BEGIN IONS" << endl;
-          output_file << "OUTPUT=" << output_type << endl;
-
-          output_file << "SCANS=" << (cons_i+1) << endl;
-          output_file << "FEATURE_ID=e_" << feature.getUniqueId() << endl;
-
-          output_file << "MSLEVEL=2" << endl;
-          output_file << "CHARGE=" << to_string(charge == 0 ? 1 : charge) << "+" << endl;
-          output_file << "PEPMASS=" << feature.getMZ() << endl;
-          output_file << "FILE_INDEX=" << best_speci << endl;
-          output_file << "RTINSECONDS=" << best_spec.getRT() << endl;
+          output_file << "BEGIN IONS" << "\n"
+                      << "OUTPUT=" << output_type << "\n"
+                      << "SCANS=" << (cons_i+1) << "\n"
+                      << "FEATURE_ID=e_" << feature.getUniqueId() << "\n"
+                      << "MSLEVEL=2" << "\n"
+                      << "CHARGE=" << to_string(charge == 0 ? 1 : charge) << "+" << "\n"
+                      << "PEPMASS=" << feature.getMZ() << "\n"
+                      << "FILE_INDEX=" << best_speci << "\n"
+                      << "RTINSECONDS=" << best_spec.getRT() << "\n";
 
           output_file << fixed << setprecision(4);
           for (auto ms2_iter = ms2_block.begin(); ms2_iter != ms2_block.end(); ++ms2_iter)
           {
             if ((int) ms2_iter->second > 0)
             {
-              output_file << ms2_iter->first << "\t" << (int) ms2_iter->second << endl;
+              output_file << ms2_iter->first << "\t" << (int) ms2_iter->second << "\n";
             }
           }
 
-          output_file << "END IONS" << endl << endl;
+          output_file << "END IONS" << "\n" << endl;
 
           // delete allocated resources
           mz_int_pairs.clear();         
@@ -527,7 +530,6 @@ protected:
     // delete / dealloc mem resources
     output_file.close();
 
-    mzml_file_paths.clear();
     delete [] mzml_files;
     delete [] specs_list;
     
